@@ -21,8 +21,7 @@
               name = "root";
               end = "-0";
               content = {
-                type = "filesystem";
-                format = "bcachefs";
+                type = "bcachefs";
                 mountpoint = "/";
               };
             };
