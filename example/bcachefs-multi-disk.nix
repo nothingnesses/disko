@@ -1,15 +1,15 @@
 {
   disko.devices = {
     disk = {
-      bcachefsmain = {
-        device = "/dev/disk/by-path/virtio-pci-0000:00:08.0";
+      vdb = {
+        device = "/dev/vdb";
         type = "disk";
         content = {
           type = "gpt";
           partitions = {
-            ESP = {
-              end = "500M";
+            vdb1 = {
               type = "EF00";
+              size = "100M";
               content = {
                 type = "filesystem";
                 format = "vfat";
@@ -17,76 +17,72 @@
                 mountOptions = [ "umask=0077" ];
               };
             };
-            root = {
-              name = "root";
-              end = "-0";
+            vdb2 = {
+              size = "100%";
               content = {
-                type = "filesystem";
-                format = "ext4";
-                mountpoint = "/";
+                type = "bcachefs";
+                filesystem = "filesystem_a";
+                label = "group_a.vdb2";
+                extraFormatArgs = [
+                  "--discard"
+                ];
               };
             };
           };
         };
       };
-
-      bcachefsdisk1 = {
+      vdc = {
+        device = "/dev/vdc";
         type = "disk";
-        device = "/dev/disk/by-path/virtio-pci-0000:00:0a.0";
         content = {
           type = "gpt";
           partitions = {
-            bcachefs = {
+            vdc1 = {
               size = "100%";
               content = {
-                type = "bcachefs_member";
-                pool = "pool1";
-                label = "fast";
-                discard = true;
-                dataAllowed = [ "journal" "btree" ];
+                type = "bcachefs";
+                filesystem = "filesystem_a";
+                label = "group_a.vdc1";
+                extraFormatArgs = [
+                  "--discard"
+                ];
               };
             };
           };
         };
       };
-      bcachefsdisk2 = {
+      vdd = {
+        device = "/dev/vdd";
         type = "disk";
-        device = "/dev/disk/by-path/virtio-pci-0000:00:0b.0";
         content = {
           type = "gpt";
           partitions = {
-            bcachefs = {
+            vdd1 = {
               size = "100%";
               content = {
-                type = "bcachefs_member";
-                pool = "pool1";
-                label = "slow";
-                durability = 2;
-                dataAllowed = [ "user" ];
+                type = "bcachefs";
+                filesystem = "filesystem_a";
+                label = "group_b.vdd1";
+                extraFormatArgs = [
+                  "--force"
+                ];
               };
             };
           };
         };
       };
-      # use whole disk, ignore partitioning
-      # disk3 = {
-      #   type = "disk";
-      #   device = "/dev/vde";
-      #   content = {
-      #     type = "bcachefs_member";
-      #     pool = "pool1";
-      #     label = "main";
-      #   };
-      # };
     };
-
-    bcachefs = {
-      pool1 = {
-        type = "bcachefs";
-
-        mountpoint = "/mnt/pool";
-        formatOptions = [ "--compression=zstd" ];
-        mountOptions = [ "verbose" "degraded" ];
+    bcachefs_filesystems = {
+      filesystem_a = {
+        type = "bcachefs_filesystem";
+        mountpoint = "/";
+        extraFormatArgs = [
+          "--compression=lz4"
+          "--background_compression=lz4"
+        ];
+        mountOptions = [
+          "verbose"
+        ];
       };
     };
   };

@@ -44,9 +44,9 @@ let
     # option for valid contents of partitions (basically like devices, but without tables)
     _partitionTypes = {
       inherit (diskoLib.types)
+        bcachefs
         btrfs
         filesystem
-        bcachefs_member
         zfs
         mdraid
         luks
@@ -70,9 +70,9 @@ let
     # option for valid contents of devices
     _deviceTypes = {
       inherit (diskoLib.types)
+        bcachefs
         table
         gpt
-        bcachefs_member
         btrfs
         filesystem
         zfs
@@ -94,19 +94,6 @@ let
         default = null;
         description = "The type of device";
       };
-
-    /**
-      Generate a random UUID using uuidgen
-  
-      mkUUID :: AttrSet -> str
-    **/
-    mkUUID =
-      { pkgs
-      , lib ? pkgs.lib
-      }: 
-      lib.removeSuffix "\n" (builtins.readFile (pkgs.runCommand "gen-uuid" {} ''
-        ${pkgs.util-linux}/bin/uuidgen -r > $out
-      ''));
 
     /**
         like lib.recursiveUpdate but supports merging of lists
@@ -626,8 +613,8 @@ let
       let
         devices = {
           inherit (cfg.config)
+            bcachefs_filesystems
             disk
-            bcachefs
             mdadm
             zpool
             lvm_vg
@@ -637,15 +624,15 @@ let
       in
       {
         options = {
+          bcachefs_filesystems = lib.mkOption {
+            type = lib.types.attrsOf diskoLib.types.bcachefs_filesystem;
+            default = { };
+            description = "bcachefs filesystem";
+          };
           disk = lib.mkOption {
             type = lib.types.attrsOf diskoLib.types.disk;
             default = { };
             description = "Block device";
-          };
-          bcachefs = lib.mkOption {
-            type = lib.types.attrsOf diskoLib.types.bcachefs;
-            default = { };
-            description = "bcachefs device";
           };
           mdadm = lib.mkOption {
             type = lib.types.attrsOf diskoLib.types.mdadm;
@@ -708,6 +695,7 @@ let
                     throw "No disks defined, did you forget to import your disko config?"
                   else
                     v;
+                # @todo Do we need to add bcachefs-tools or not?
                 destroyDependencies = with pkgs; [
                   util-linux
                   e2fsprogs
