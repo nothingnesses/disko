@@ -133,6 +133,7 @@
           # bcachefs version >&2 2>&1;
 
           if ! findmnt "${rootMountPoint}${config.mountpoint}" >&2 2>&1; then
+            # @todo Figure out why `X-mount.mkdir` doesn't seem to be working, necessitating `mkdir` here.
             mkdir -p "${rootMountPoint}${config.mountpoint}";
             ${lib.optionalString (config.passwordFile != null) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" <<< "$(cat ${config.passwordFile})"''};
             bcachefs mount \
