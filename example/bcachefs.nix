@@ -21,7 +21,7 @@
               size = "100%";
               content = {
                 type = "bcachefs";
-                filesystem = "filesystem_a";
+                filesystem = "root";
                 label = "group_a.vdb2";
                 extraFormatArgs = [
                   "--discard"
@@ -41,7 +41,7 @@
               size = "100%";
               content = {
                 type = "bcachefs";
-                filesystem = "filesystem_a";
+                filesystem = "root";
                 label = "group_a.vdc1";
                 extraFormatArgs = [
                   "--discard"
@@ -61,7 +61,7 @@
               size = "100%";
               content = {
                 type = "bcachefs";
-                filesystem = "filesystem_a";
+                filesystem = "root";
                 label = "group_b.vdd1";
                 extraFormatArgs = [
                   "--force"
@@ -73,7 +73,7 @@
       };
     };
     bcachefs_filesystems = {
-      filesystem_a = {
+      root = {
         type = "bcachefs_filesystem";
         mountpoint = "/";
         passwordFile = "/tmp/secret.key";
