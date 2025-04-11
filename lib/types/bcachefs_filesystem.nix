@@ -7,8 +7,7 @@
   rootMountPoint,
   # @todo Add any other parameters here, if needed
   ...
-}:
-{
+}: {
   options = {
     # @todo Add any other options here, if needed
     # @todo Check that this implementation is correct:
@@ -91,20 +90,28 @@
         # ls -la /dev/disk/by-partlabel/ >&2 2>&1;
         # printf "name: %s\n" "${config.name}" >&2 2>&1;
 
-        # Collect devices and arguments
-        devices_args=()
-        while IFS= read -r line; do
-          devices_args+=("$line")
-        done < "$disko_devices_dir/bcachefs-${config.name}"
+        if ! test -s "$disko_devices_dir/bcachefs-${config.name}"; then
+          printf "\033[31mERROR:\033[0m No devices found for bcachefs filesystem \"${config.name}\"!\nDid you forget to add some or misspell the filesystem name?\n" >&2;
+          exit 1;
+        fi;
+        (
+          # Empty out $@
+          set --;
+          # Collect devices and arguments to $@
+          while IFS= read -r line; do
+            # Append current line as a new positional parameter
+            set -- "$@" "$line";
+          done < "$disko_devices_dir/bcachefs-${config.name}";
 
-        # Format the filesystem with all devices and arguments
-        if ! blkid -o export "$(blkid -lU ${config.uuid})" | grep -q 'TYPE=bcachefs' >&2 2>&1; then
-          bcachefs format \
-            "''${devices_args[@]}" \
-            --uuid="${config.uuid}" \
-            ${lib.concatStringsSep " \\\n" config.extraFormatArgs} \
-            ${lib.optionalString (config.passwordFile != null) "--encrypted <<<\"$(cat ${config.passwordFile})\""};
-        fi
+          # Format the filesystem with all devices and arguments
+          if ! blkid -o export "$(blkid -lU ${config.uuid})" | grep -q 'TYPE=bcachefs' >&2 2>&1; then
+            bcachefs format \
+              "$@" \
+              --uuid="${config.uuid}" \
+              ${lib.concatStringsSep " \\\n" config.extraFormatArgs} \
+              ${lib.optionalString (config.passwordFile != null) ''--encrypted < "${config.passwordFile}"''};
+          fi;
+        );
 
         # # Debugging
         # ls -la "$disko_devices_dir";
@@ -135,12 +142,12 @@
           if ! findmnt "${rootMountPoint}${config.mountpoint}" >&2 2>&1; then
             # @todo Figure out why `X-mount.mkdir` doesn't seem to be working, necessitating `mkdir` here.
             mkdir -p "${rootMountPoint}${config.mountpoint}";
-            ${lib.optionalString (config.passwordFile != null) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" <<< "$(cat ${config.passwordFile})"''};
+            ${lib.optionalString (config.passwordFile != null) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" < "${config.passwordFile}";''}
             bcachefs mount \
               -o "${lib.concatStringsSep "," (["X-mount.mkdir"] ++ config.mountOptions)}" \
               UUID="${config.uuid}" \
               "${rootMountPoint}${config.mountpoint}";
-          fi
+          fi;
 
           # # Debugging
           # lsblk -f >&2 2>&1;
