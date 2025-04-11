@@ -58,6 +58,12 @@
         If not provided, a deterministic UUID will be generated based on the filesystem name.
       '';
     };
+    passwordFile = lib.mkOption {
+      type = lib.types.nullOr diskoLib.optionTypes.absolute-pathname;
+      default = null;
+      description = "Path to the file containing the password for encryption";
+      example = "/tmp/disk.key";
+    };
     # @todo Check that this implementation is correct:
     _parent = lib.mkOption {
       internal = true;
@@ -96,7 +102,8 @@
           bcachefs format \
             "''${devices_args[@]}" \
             --uuid="${config.uuid}" \
-            ${lib.concatStringsSep " \\\n" config.extraFormatArgs};
+            ${lib.concatStringsSep " \\\n" config.extraFormatArgs} \
+            ${lib.optionalString (config.passwordFile != null) "--encrypted <<<\"$(cat ${config.passwordFile})\""};
         fi
 
         # # Debugging
@@ -127,6 +134,7 @@
 
           if ! findmnt "${rootMountPoint}${config.mountpoint}" >&2 2>&1; then
             mkdir -p "${rootMountPoint}${config.mountpoint}";
+            ${lib.optionalString (config.passwordFile != null) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" <<< "$(cat ${config.passwordFile})"''};
             bcachefs mount \
               -o "${lib.concatStringsSep "," (["X-mount.mkdir"] ++ config.mountOptions)}" \
               UUID="${config.uuid}" \
