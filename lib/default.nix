@@ -377,6 +377,7 @@ let
             || n == "partitions"
             || n == "datasets"
             || n == "swap"
+            || n == "subvolumes"
             || n == "mode"
           );
       in

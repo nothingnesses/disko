@@ -28,7 +28,7 @@
     };
     mountOptions = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ "defaults" ];
+      default = [ "X-mount.mkdir" ];
       description = "Options to pass to mount";
     };
     mountpoint = lib.mkOption {
@@ -63,6 +63,18 @@
       description = "Path to the file containing the password for encryption";
       example = "/tmp/disk.key";
     };
+    subvolumes = lib.mkOption {
+      type = lib.types.attrsOf (
+        diskoLib.subType {
+          types = {
+            bcachefs_subvolume = diskoLib.types.bcachefs_subvolume;
+          };
+          extraArgs.parent = config;
+        }
+      );
+      default = {};
+      description = "List of subvolumes to define";
+    };
     # @todo Check that this implementation is correct:
     _parent = lib.mkOption {
       internal = true;
@@ -75,6 +87,9 @@
       # @todo We need to ensure that the script in `_create` in bcachefs.nix has been ran
       # for each of the devices in the filesystem being created,
       # before the `_create` in this file is ran.
+      # @todo We then need to ensure that this file's `_create` and `mount` will be ran
+      # before the `_create` in bcachefs_subvolume.nix for each of the subvolumes
+      # that this filesystem will contain is ran.
       default = dev: { };
       description = "Metadata";
     };
@@ -169,13 +184,15 @@
       internal = true;
       readOnly = true;
       # @todo Check that this implementation is correct:
-      default = lib.optional (config.mountpoint != null) {
-        fileSystems.${config.mountpoint} = {
-          device = "UUID=${config.uuid}";
-          fsType = "bcachefs";
-          options = config.mountOptions;
-        };
-      };
+      default = [
+        (lib.optional (config.mountpoint != null) {
+          fileSystems.${config.mountpoint} = {
+            device = "UUID=${config.uuid}";
+            fsType = "bcachefs";
+            options = ["X-mount.mkdir"] ++ config.mountOptions;
+          };
+        })
+      ] ++ lib.filter (subvolume_config: subvolume_config != null) (map (subvolume: subvolume._config) (lib.attrValues config.subvolumes));
       description = "NixOS configuration";
     };
     _pkgs = lib.mkOption {
@@ -186,6 +203,7 @@
         pkgs.bcachefs-tools
         # # For debugging
         # pkgs.file
+        pkgs.util-linux
       ];
       description = "Packages";
     };

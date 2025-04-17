@@ -15,6 +15,7 @@ diskoLib.testLib.makeDiskoTest {
     machine.succeed("mount | grep ' / ' | grep -q 'compression=lz4'");
     machine.succeed("mount | grep ' / ' | grep -q 'background_compression=lz4'");
     # @todo Verify mountpoint dependency order was respected
+    # @todo Add tests for subvolumes
     # Print debug information
     machine.succeed("lsblk >&2");
     machine.succeed("lsblk -f >&2");

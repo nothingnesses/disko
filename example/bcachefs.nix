@@ -21,7 +21,7 @@
               size = "100%";
               content = {
                 type = "bcachefs";
-                filesystem = "root";
+                filesystem = "filesystem_multi";
                 label = "group_a.vdb2";
                 extraFormatArgs = [
                   "--discard"
@@ -41,7 +41,7 @@
               size = "100%";
               content = {
                 type = "bcachefs";
-                filesystem = "root";
+                filesystem = "filesystem_multi";
                 label = "group_a.vdc1";
                 extraFormatArgs = [
                   "--discard"
@@ -61,7 +61,7 @@
               size = "100%";
               content = {
                 type = "bcachefs";
-                filesystem = "root";
+                filesystem = "filesystem_multi";
                 label = "group_b.vdd1";
                 extraFormatArgs = [
                   "--force"
@@ -71,11 +71,32 @@
           };
         };
       };
+      vde = {
+        device = "/dev/vde";
+        type = "disk";
+        content = {
+          type = "gpt";
+          partitions = {
+            vdd1 = {
+              size = "100%";
+              content = {
+                type = "bcachefs";
+                filesystem = "filesystem_vde1";
+                label = "group_a.vde1";
+              };
+            };
+          };
+        };
+      };
     };
     bcachefs_filesystems = {
-      root = {
+      filesystem_vde1 = {
         type = "bcachefs_filesystem";
-        mountpoint = "/";
+        # Relies on the existence of a subvolume in another filesystem
+        mountpoint = "/home/somedir/vde1";
+      };
+      filesystem_multi = {
+        type = "bcachefs_filesystem";
         passwordFile = "/tmp/secret.key";
         extraFormatArgs = [
           "--compression=lz4"
@@ -84,6 +105,31 @@
         mountOptions = [
           "verbose"
         ];
+        subvolumes = {
+          # Subvolume name is different from mountpoint
+          "/rootfs" = {
+            mountpoint = "/";
+            type = "bcachefs_subvolume";
+          };
+          # Subvolume name is the same as the mountpoint
+          "/home" = {
+            mountpoint = "/home";
+            type = "bcachefs_subvolume";
+          };
+          # Sub(sub)volume doesn't need a mountpoint as its parent is mounted
+          "/home/user" = {
+            type = "bcachefs_subvolume";
+          };
+          # Parent is not mounted so the mountpoint must be set
+          "/nix" = {
+            mountpoint = "/nix";
+            type = "bcachefs_subvolume";
+          };
+          # This subvolume will be created but not mounted
+          "/test" = {
+            type = "bcachefs_subvolume";
+          };
+        };
       };
     };
   };

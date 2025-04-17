@@ -111,7 +111,6 @@
       readOnly = true;
       type = lib.types.functionTo (lib.types.listOf lib.types.package);
       default = pkgs: [
-        pkgs.bcachefs-tools
         # # For debugging
         # pkgs.file
       ];
