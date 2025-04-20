@@ -64,8 +64,7 @@
       # Instead, the`bcachefs format` command should be ran in the `_create` attribute in bcachefs_filesystem.nix, once it has collect and generated the arguments specifying the devices that should be part of the filesystem.
       # However, the current file might need to somehow make information about the current device available to the `_create` attribute in bcachefs_filesystem.nix, if the latter won't otherwise be able to access information about the devices comprising the filesystem being created.
       default = ''
-        # # Debugging
-        # printf "bcachefs\n" >&2 2>&1;
+        printf "\033[32mDEBUG:\033[0m create bcachefs\n" >&2 2>&1;
         # ls -la /dev/disk/by-partlabel/ >&2 2>&1;
         # printf "bcachefs\nfilesystem: %s\ndevice: %s\n" "${config.filesystem}" "${config.device}" >&2 2>&1;
 
@@ -76,7 +75,6 @@
           printf '%s\n' '${config.device}';
         } >> "$disko_devices_dir/bcachefs-${lib.escapeShellArg config.filesystem}";
 
-        # # Debugging
         # ls -la "$disko_devices_dir";
         # find "$disko_devices_dir" -type f -exec sh -c '
         #   for f do
@@ -87,6 +85,7 @@
         #     fi
         #   done
         # ' sh {} +;
+        printf "\033[32mDEBUG:\033[0m end create bcachefs\n" >&2 2>&1;
       '';
     };
     _mount = diskoLib.mkMountOption {
@@ -111,7 +110,6 @@
       readOnly = true;
       type = lib.types.functionTo (lib.types.listOf lib.types.package);
       default = pkgs: [
-        pkgs.bcachefs-tools
         # # For debugging
         # pkgs.file
       ];
