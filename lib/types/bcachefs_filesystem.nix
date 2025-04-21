@@ -5,12 +5,9 @@
   options,
   parent,
   rootMountPoint,
-  # @todo Add any other parameters here, if needed
   ...
 }: {
   options = {
-    # @todo Add any other options here, if needed
-    # @todo Check that this implementation is correct:
     name = lib.mkOption {
       type = lib.types.str;
       default = config._module.args.name;
@@ -99,7 +96,6 @@
       default = {};
       description = "List of subvolumes to define";
     };
-    # @todo Check that this implementation is correct:
     _parent = lib.mkOption {
       internal = true;
       default = parent;
@@ -108,21 +104,15 @@
       internal = true;
       readOnly = true;
       type = lib.types.functionTo diskoLib.jsonType;
-      # @todo We need to ensure that the script in `_create` in bcachefs.nix has been ran
-      # for each of the devices in the filesystem being created,
-      # before the `_create` in this file is ran.
-      # @todo We then need to ensure that this file's `_create` will be ran
-      # before the `_create` in bcachefs_subvolume.nix for each of the subvolumes
-      # that this filesystem will contain is ran.
       default = dev: { };
       description = "Metadata";
     };
     _create = diskoLib.mkCreateOption {
       inherit config options;
-      # This should set a string variable containing arguments to be passed to the `bcachefs format` command.
-      # This string should consist of `--label` and other arguments that correspond to the values of the `label` and `extraFormatArgs` attributes, respectively,
+      # This sets a string variable containing arguments to be passed to the `bcachefs format` command.
+      # This string will consist of `--label` and other arguments that correspond to the values of the `label` and `extraFormatArgs` attributes, respectively,
       # from each of the bcachefs devices in this filesystem specified in the configuration.
-      # Then, it should set the `default` attribute to a string containing shell commands that calls the `bcachefs format` command, passing in the arguments generated, as well as a `--uuid` value.
+      # Then, it sets the `default` attribute to a string containing shell commands that calls the `bcachefs format` command, passing in the arguments generated, as well as a `--uuid` value.
       default = ''
         printf "\033[32mDEBUG:\033[0m create bcachefs_filesystem\n" >&2 2>&1;
         # ls -la /dev/disk/by-partlabel/ >&2 2>&1;
@@ -133,17 +123,17 @@
           exit 1;
         fi;
 
-        # Create the filesystem
+        # Create the filesystem.
         (
           # Empty out $@
           set --;
-          # Collect devices and arguments to $@
+          # Collect devices and arguments to $@.
           while IFS= read -r line; do
             # Append current line as a new positional parameter
             set -- "$@" "$line";
           done < "$disko_devices_dir/bcachefs-${config.name}";
 
-          # Format the filesystem with all devices and arguments
+          # Format the filesystem with all devices and arguments.
           if ! blkid -o export "$(blkid -lU ${config.uuid})" | grep -q 'TYPE=bcachefs' >&2 2>&1; then
             bcachefs format \
               "$@" \
@@ -154,7 +144,7 @@
         );
 
         # Mount the bcachefs filesystem onto a temporary directory,
-        # then create the subvolumes from inside of that directory.
+        # then, create the subvolumes from inside of that directory.
         ${lib.optionalString (config.subvolumes != { }) ''
           printf "\033[32mDEBUG:\033[0m create bcachefs_subvolume\n" >&2 2>&1;
 
@@ -171,11 +161,11 @@
                 trap 'umount "$MNTPOINT"; rm -rf "$MNTPOINT"; rm -rf "$TEMPDIR";' EXIT;
                 SUBVOL_ABS_PATH="$MNTPOINT/${subvolume.name}";
                 printf "\033[32mDEBUG:\033[0m Checking existence of subvolume path: %s\n" "$SUBVOL_ABS_PATH" >&2 2>&1;
-                # Check if it's already a subvolume (using snapshot)
+                # Check if it's already a subvolume (using snapshot).
                 if ! bcachefs subvolume snapshot "$SUBVOL_ABS_PATH" "$TEMPDIR/" >&2 2>&1; then
-                  # It's not a subvolume, now check if it's a directory
+                  # It's not a subvolume, now check if it's a directory.
                   if ! test -d "$SUBVOL_ABS_PATH"; then
-                    # It's not a subvolume AND not a directory, so create it
+                    # It's not a subvolume AND not a directory, so create it.
                     printf "\033[32mDEBUG:\033[0m Path %s is neither a subvolume nor a directory. Creating...\n" "$SUBVOL_ABS_PATH" >&2 2>&1
                     mkdir -p -- "$(dirname -- "$SUBVOL_ABS_PATH")";
                     bcachefs subvolume create "$SUBVOL_ABS_PATH";
@@ -205,7 +195,6 @@
     };
     _mount = diskoLib.mkMountOption {
       inherit config options;
-      # @todo Check that this implementation is correct:
       default =
         let
           subvolumeMounts = diskoLib.deepMergeMap (subvolume: lib.optionalAttrs (subvolume.mountpoint != null) {
@@ -260,7 +249,6 @@
     };
     _unmount = diskoLib.mkUnmountOption {
       inherit config options;
-      # @todo Check that this implementation is correct:
       default =
         let
           subvolumeMounts = lib.concatMapAttrs (
