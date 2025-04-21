@@ -6,7 +6,8 @@
   parent,
   rootMountPoint,
   ...
-}: {
+}:
+{
   options = {
     name = lib.mkOption {
       type = lib.types.str;
@@ -35,17 +36,18 @@
     };
     uuid = lib.mkOption {
       type = lib.types.strMatching "[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}";
-      default = let
-        # Generate a deterministic but random-looking UUID based on the filesystem name
-        # This avoids the need for impure access to nixpkgs at evaluation time
-        hash = builtins.hashString "sha256" "${config.name}";
-        hexChars = builtins.substring 0 32 hash;
-        p1 = builtins.substring 0 8 hexChars;
-        p2 = builtins.substring 8 4 hexChars;
-        p3 = builtins.substring 12 4 hexChars;
-        p4 = builtins.substring 16 4 hexChars;
-        p5 = builtins.substring 20 12 hexChars;
-      in
+      default =
+        let
+          # Generate a deterministic but random-looking UUID based on the filesystem name
+          # This avoids the need for impure access to nixpkgs at evaluation time
+          hash = builtins.hashString "sha256" "${config.name}";
+          hexChars = builtins.substring 0 32 hash;
+          p1 = builtins.substring 0 8 hexChars;
+          p2 = builtins.substring 8 4 hexChars;
+          p3 = builtins.substring 12 4 hexChars;
+          p4 = builtins.substring 16 4 hexChars;
+          p5 = builtins.substring 20 12 hexChars;
+        in
         "${p1}-${p2}-${p3}-${p4}-${p5}";
       defaultText = "generated deterministically based on filesystem name";
       example = "809b3a2b-828a-4730-95e1-75b6343e415a";
@@ -63,7 +65,8 @@
     subvolumes = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule (
-          { config, ... }: {
+          { config, ... }:
+          {
             options = {
               name = lib.mkOption {
                 type = lib.types.str;
@@ -93,7 +96,7 @@
           }
         )
       );
-      default = {};
+      default = { };
       description = "List of subvolumes to define";
     };
     _parent = lib.mkOption {
@@ -139,7 +142,9 @@
               "$@" \
               --uuid="${config.uuid}" \
               ${lib.concatStringsSep " \\\n" config.extraFormatArgs} \
-              ${lib.optionalString (config.passwordFile != null) ''--encrypted < "${config.passwordFile}"''};
+              ${
+                lib.optionalString (config.passwordFile != null) ''--encrypted < "${config.passwordFile}"''
+              };
           fi;
         );
 
@@ -153,9 +158,16 @@
               (
                 TEMPDIR="$(mktemp -d)";
                 MNTPOINT="$(mktemp -d)";
-                ${lib.optionalString (config.passwordFile != null) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" < "${config.passwordFile}";''}
+                ${lib.optionalString (
+                  config.passwordFile != null
+                ) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" < "${config.passwordFile}";''}
                 bcachefs mount \
-                  -o "${lib.concatStringsSep "," (["X-mount.mkdir"] ++ lib.optionals (config.mountOptions != ["X-mount.mkdir"]) config.mountOptions)}" \
+                  -o "${
+                    lib.concatStringsSep "," (
+                      [ "X-mount.mkdir" ]
+                      ++ lib.optionals (config.mountOptions != [ "X-mount.mkdir" ]) config.mountOptions
+                    )
+                  }" \
                   UUID="${config.uuid}" \
                   "$MNTPOINT";
                 trap 'umount "$MNTPOINT"; rm -rf "$MNTPOINT"; rm -rf "$TEMPDIR";' EXIT;
@@ -197,52 +209,78 @@
       inherit config options;
       default =
         let
-          subvolumeMounts = diskoLib.deepMergeMap (subvolume: lib.optionalAttrs (subvolume.mountpoint != null) {
-            ${subvolume.mountpoint} = ''
-              printf "\033[32mDEBUG:\033[0m mount bcachefs_subvolume\n">&2 2>&1;
-              mount >&2 2>&1;
+          subvolumeMounts = diskoLib.deepMergeMap (
+            subvolume:
+            lib.optionalAttrs (subvolume.mountpoint != null) {
+              ${subvolume.mountpoint} = ''
+                printf "\033[32mDEBUG:\033[0m mount bcachefs_subvolume\n">&2 2>&1;
+                mount >&2 2>&1;
 
-              if ! findmnt "${rootMountPoint}${subvolume.mountpoint}" >&2 2>&1; then
-                # @todo Figure out why the "X-mount.mkdir" option here doesn't seem to work,
-                # necessitating running `mkdir` here.
-                mkdir -p "${rootMountPoint}${subvolume.mountpoint}";
-                ${lib.optionalString (config.passwordFile != null) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" < "${config.passwordFile}";''}
-                bcachefs mount \
-                  -o "${lib.concatStringsSep "," (["X-mount.mkdir" "X-mount.subdir=${lib.removePrefix "/" subvolume.name}"] ++ lib.optionals (subvolume.mountOptions != lib.naturalSort ["X-mount.mkdir" "X-mount.subdir=${lib.removePrefix "/" subvolume.name}"]) subvolume.mountOptions)}" \
-                  UUID="${config.uuid}" \
-                  "${rootMountPoint}${subvolume.mountpoint}";
-              fi;
+                if ! findmnt "${rootMountPoint}${subvolume.mountpoint}" >&2 2>&1; then
+                  # @todo Figure out why the "X-mount.mkdir" option here doesn't seem to work,
+                  # necessitating running `mkdir` here.
+                  mkdir -p "${rootMountPoint}${subvolume.mountpoint}";
+                  ${lib.optionalString (
+                    config.passwordFile != null
+                  ) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" < "${config.passwordFile}";''}
+                  bcachefs mount \
+                    -o "${
+                      lib.concatStringsSep "," (
+                        [
+                          "X-mount.mkdir"
+                          "X-mount.subdir=${lib.removePrefix "/" subvolume.name}"
+                        ]
+                        ++ lib.optionals (
+                          subvolume.mountOptions != lib.naturalSort [
+                            "X-mount.mkdir"
+                            "X-mount.subdir=${lib.removePrefix "/" subvolume.name}"
+                          ]
+                        ) subvolume.mountOptions
+                      )
+                    }" \
+                    UUID="${config.uuid}" \
+                    "${rootMountPoint}${subvolume.mountpoint}";
+                fi;
 
-              mount >&2 2>&1;
-              printf "\033[32mDEBUG:\033[0m end mount bcachefs_subvolume\n" >&2 2>&1;
-            '';
-          }) (lib.attrValues config.subvolumes);
+                mount >&2 2>&1;
+                printf "\033[32mDEBUG:\033[0m end mount bcachefs_subvolume\n" >&2 2>&1;
+              '';
+            }
+          ) (lib.attrValues config.subvolumes);
         in
         {
-          fs = subvolumeMounts
+          fs =
+            subvolumeMounts
             // lib.optionalAttrs (config.mountpoint != null) {
               ${config.mountpoint} = ''
-                  printf "\033[32mDEBUG:\033[0m mount bcachefs_filesystem\n">&2 2>&1;
-                  # lsblk -f >&2 2>&1;
-                  # lsblk >&2 2>&1;
-                  # uname -a >&2 2>&1;
-                  # bcachefs version >&2 2>&1;
+                printf "\033[32mDEBUG:\033[0m mount bcachefs_filesystem\n">&2 2>&1;
+                # lsblk -f >&2 2>&1;
+                # lsblk >&2 2>&1;
+                # uname -a >&2 2>&1;
+                # bcachefs version >&2 2>&1;
 
-                  if ! findmnt "${rootMountPoint}${config.mountpoint}" >&2 2>&1; then
-                    # @todo Figure out why the "X-mount.mkdir" option here doesn't seem to work,
-                    # necessitating running `mkdir` here.
-                    mkdir -p "${rootMountPoint}${config.mountpoint}";
-                    ${lib.optionalString (config.passwordFile != null) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" < "${config.passwordFile}";''}
-                    bcachefs mount \
-                      -o "${lib.concatStringsSep "," (["X-mount.mkdir"] ++ lib.optionals (config.mountOptions != ["X-mount.mkdir"]) config.mountOptions)}" \
-                      UUID="${config.uuid}" \
-                      "${rootMountPoint}${config.mountpoint}";
-                  fi;
+                if ! findmnt "${rootMountPoint}${config.mountpoint}" >&2 2>&1; then
+                  # @todo Figure out why the "X-mount.mkdir" option here doesn't seem to work,
+                  # necessitating running `mkdir` here.
+                  mkdir -p "${rootMountPoint}${config.mountpoint}";
+                  ${lib.optionalString (
+                    config.passwordFile != null
+                  ) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" < "${config.passwordFile}";''}
+                  bcachefs mount \
+                    -o "${
+                      lib.concatStringsSep "," (
+                        [ "X-mount.mkdir" ]
+                        ++ lib.optionals (config.mountOptions != [ "X-mount.mkdir" ]) config.mountOptions
+                      )
+                    }" \
+                    UUID="${config.uuid}" \
+                    "${rootMountPoint}${config.mountpoint}";
+                fi;
 
-                  # lsblk -f >&2 2>&1;
-                  # lsblk >&2 2>&1;
-                  # mount >&2 2>&1;
-                  printf "\033[32mDEBUG:\033[0m end mount bcachefs_filesystem\n" >&2 2>&1;
+                # lsblk -f >&2 2>&1;
+                # lsblk >&2 2>&1;
+                # mount >&2 2>&1;
+                printf "\033[32mDEBUG:\033[0m end mount bcachefs_filesystem\n" >&2 2>&1;
               '';
             };
         };
@@ -278,30 +316,36 @@
       internal = true;
       readOnly = true;
       # @todo Check that this implementation is correct:
-      default = (lib.optional (config.mountpoint != null) {
+      default =
+        (lib.optional (config.mountpoint != null) {
           fileSystems.${config.mountpoint} = {
             device = "UUID=${config.uuid}";
             fsType = "bcachefs";
-            options = ["X-mount.mkdir"]
-              ++ lib.optionals (config.mountOptions != ["X-mount.mkdir"]) config.mountOptions;
+            options = [
+              "X-mount.mkdir"
+            ] ++ lib.optionals (config.mountOptions != [ "X-mount.mkdir" ]) config.mountOptions;
             neededForBoot = true;
           };
         })
-        ++ (map (
-          subvolume: {
-            fileSystems.${subvolume.mountpoint} = {
-              # device = "/dev/disk/by-uuid/${config.uuid}";
-              device = "UUID=${config.uuid}";
-              fsType = "bcachefs";
-              options = [
+        ++ (map (subvolume: {
+          fileSystems.${subvolume.mountpoint} = {
+            # device = "/dev/disk/by-uuid/${config.uuid}";
+            device = "UUID=${config.uuid}";
+            fsType = "bcachefs";
+            options =
+              [
+                "X-mount.mkdir"
+                "X-mount.subdir=${lib.removePrefix "/" subvolume.name}"
+              ]
+              ++ lib.optionals (
+                subvolume.mountOptions != lib.naturalSort [
                   "X-mount.mkdir"
                   "X-mount.subdir=${lib.removePrefix "/" subvolume.name}"
                 ]
-                ++ lib.optionals (subvolume.mountOptions != lib.naturalSort ["X-mount.mkdir" "X-mount.subdir=${lib.removePrefix "/" subvolume.name}"]) subvolume.mountOptions;
-              neededForBoot = true;
-            };
-          }
-        ) (lib.filter (subvolume: subvolume.mountpoint != null) (lib.attrValues config.subvolumes)));
+              ) subvolume.mountOptions;
+            neededForBoot = true;
+          };
+        }) (lib.filter (subvolume: subvolume.mountpoint != null) (lib.attrValues config.subvolumes)));
       description = "NixOS configuration";
     };
     _pkgs = lib.mkOption {

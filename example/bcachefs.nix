@@ -167,6 +167,7 @@
       };
     };
     bcachefs_filesystems = {
+      # Example showing unmounted subvolumes in a multi-disk configuration.
       unmounted_subvolumes_in_multi = {
         type = "bcachefs_filesystem";
         passwordFile = "/tmp/secret.key";
@@ -186,6 +187,7 @@
           "subvolumes/test" = { };
         };
       };
+      # # Example showing mounted subvolumes in a multi-disk configuration (not yet working).
       # mounted_subvolumes_in_multi = {
       #   type = "bcachefs_filesystem";
       #   passwordFile = "/tmp/secret.key";
@@ -217,10 +219,13 @@
       #     };
       #   };
       # };
+      # Example showing another bcachefs filesystem.
       no_reliance_on_external_subvolume = {
         type = "bcachefs_filesystem";
         mountpoint = "/sometestdir";
       };
+      # Example showing another bcachefs filesystem that relies on a subvolume
+      # in another filesystem being mounted (not yet working).
       # relies_on_external_subvolume = {
       #   type = "bcachefs_filesystem";
       #   mountpoint = "/home/somedir/vdf1";

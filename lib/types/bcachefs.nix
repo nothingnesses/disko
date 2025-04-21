@@ -6,7 +6,8 @@
   options,
   parent,
   ...
-}: {
+}:
+{
   options = {
     type = lib.mkOption {
       type = lib.types.enum [ "bcachefs" ];
