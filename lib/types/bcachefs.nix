@@ -18,10 +18,12 @@
       type = lib.types.str;
       default = device;
       description = "Device to use";
+      example = "/dev/sda";
     };
     filesystem = lib.mkOption {
       type = lib.types.str;
       description = "Name of the bcachefs filesystem this partition belongs to";
+      example = "main_bcachefs_filesystem";
     };
     # These are passed as arguments to the device corresponding to this one in the invocation of the `bcachefs format` command
     # in the bcachefs_filesystem type defined in bcachefs_filesystem.nix used to format the bcachefs filesystem that this device is a part of.
@@ -29,13 +31,18 @@
       type = lib.types.listOf lib.types.str;
       default = [ ];
       description = "Extra arguments passed to the bcachefs format command";
+      example = [ "--discard" ];
     };
     # This value is passed to the `--label` option for the device corresponding to this one in the invocation of the `bcachefs format` command
     # in the bcachefs_filesystem type defined in bcachefs_filesystem.nix used to format the bcachefs filesystem that this device is a part of.
     label = lib.mkOption {
       type = lib.types.str;
       default = "";
-      description = "Label to use for this device";
+      description = ''
+        Label to use for this device.
+        This value is passed as the `--label` argument to the `bcachefs format` command when formatting the device.
+      '';
+      example = "group_a.sda2";
     };
     _parent = lib.mkOption {
       internal = true;

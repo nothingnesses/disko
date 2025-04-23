@@ -21,6 +21,7 @@
               size = "100%";
               content = {
                 type = "bcachefs";
+                # This refers to a filesystem in bcachefs_filesystems
                 filesystem = "unmounted_subvolumes_in_multi";
                 label = "group_a.vdb2";
                 extraFormatArgs = [
@@ -224,7 +225,7 @@
         type = "bcachefs_filesystem";
         mountpoint = "/sometestdir";
       };
-      # Example showing another bcachefs filesystem that relies on a subvolume
+      # # Example showing another bcachefs filesystem that relies on a subvolume
       # in another filesystem being mounted (not yet working).
       # relies_on_external_subvolume = {
       #   type = "bcachefs_filesystem";

@@ -13,6 +13,7 @@
       type = lib.types.str;
       default = config._module.args.name;
       description = "Name of the bcachefs filesystem";
+      example = "main_bcachefs_filesystem";
     };
     type = lib.mkOption {
       type = lib.types.enum [ "bcachefs_filesystem" ];
@@ -23,16 +24,28 @@
       type = lib.types.listOf lib.types.str;
       default = [ ];
       description = "Extra arguments passed to the `bcachefs format` command";
+      example = [
+        "--compression=lz4"
+        "--background_compression=lz4"
+      ];
     };
     mountOptions = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ "X-mount.mkdir" ];
-      description = "Options to pass to mount";
+      description = ''
+        Options to pass to mount.
+        The "X-mount.mkdir" option is always automatically added.
+      '';
+      example = [
+        "noatime"
+        "verbose"
+      ];
     };
     mountpoint = lib.mkOption {
       type = lib.types.nullOr diskoLib.optionTypes.absolute-pathname;
       default = null;
       description = "Path to mount the bcachefs filesystem to";
+      example = "/";
     };
     uuid = lib.mkOption {
       type = lib.types.strMatching "[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}";
@@ -59,7 +72,10 @@
     passwordFile = lib.mkOption {
       type = lib.types.nullOr diskoLib.optionTypes.absolute-pathname;
       default = null;
-      description = "Path to the file containing the password for encryption";
+      description = ''
+        Path to the file containing the password for encryption.
+        Setting this option will automatically cause the `--encrypted` option to be passed to `bcachefs format` and cause the filesystem to have encryption enabled.
+      '';
       example = "/tmp/disk.key";
     };
     subvolumes = lib.mkOption {
@@ -71,7 +87,11 @@
               name = lib.mkOption {
                 type = lib.types.str;
                 default = config._module.args.name;
-                description = "Path of the subvolume";
+                description = ''
+                  Path of the subvolume.
+                  Leading forward slashes are automatically removed.
+                '';
+                example = "subvolumes/home";
               };
               type = lib.mkOption {
                 type = lib.types.enum [ "bcachefs_subvolume" ];
@@ -85,12 +105,19 @@
                   "X-mount.mkdir"
                   "X-mount.subdir=${lib.removePrefix "/" config.name}"
                 ];
-                description = "Options to pass to mount";
+                description = ''
+                  Options to pass to mount.
+                  The "X-mount.mkdir" and "X-mount.subdir" options are always automatically added.
+                '';
               };
               mountpoint = lib.mkOption {
                 type = lib.types.nullOr diskoLib.optionTypes.absolute-pathname;
                 default = null;
-                description = "Path to mount the subvolume to";
+                description = ''
+                  Path to mount the subvolume to.
+                  DO NOT USE. Currently not working.
+                '';
+                example = "/";
               };
             };
           }
@@ -98,6 +125,9 @@
       );
       default = { };
       description = "List of subvolumes to define";
+      example = {
+        "subvolumes/home" = { };
+      };
     };
     _parent = lib.mkOption {
       internal = true;
