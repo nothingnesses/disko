@@ -12,7 +12,7 @@
     name = lib.mkOption {
       type = lib.types.str;
       default = config._module.args.name;
-      description = "Name of the bcachefs filesystem";
+      description = "Name of the bcachefs filesystem.";
       example = "main_bcachefs_filesystem";
     };
     type = lib.mkOption {
@@ -23,7 +23,7 @@
     extraFormatArgs = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Extra arguments passed to the `bcachefs format` command";
+      description = "Extra arguments passed to the `bcachefs format` command.";
       example = [
         "--compression=lz4"
         "--background_compression=lz4"
@@ -124,7 +124,7 @@
         )
       );
       default = { };
-      description = "List of subvolumes to define";
+      description = "List of subvolumes to define.";
       example = {
         "subvolumes/home" = { };
       };
@@ -147,10 +147,6 @@
       # from each of the bcachefs devices in this filesystem specified in the configuration.
       # Then, it sets the `default` attribute to a string containing shell commands that calls the `bcachefs format` command, passing in the arguments generated, as well as a `--uuid` value.
       default = ''
-        printf "\033[32mDEBUG:\033[0m create bcachefs_filesystem\n" >&2 2>&1;
-        # ls -la /dev/disk/by-partlabel/ >&2 2>&1;
-        # printf "name: %s\n" "${config.name}" >&2 2>&1;
-
         if ! test -s "$disko_devices_dir/bcachefs-${config.name}"; then
           printf "\033[31mERROR:\033[0m No devices found for bcachefs filesystem \"${config.name}\"!\nDid you forget to add some or misspell the filesystem name?\n" >&2;
           exit 1;
@@ -158,7 +154,7 @@
 
         # Create the filesystem.
         (
-          # Empty out $@
+          # Empty out $@.
           set --;
           # Collect devices and arguments to $@.
           while IFS= read -r line; do
@@ -181,8 +177,6 @@
         # Mount the bcachefs filesystem onto a temporary directory,
         # then, create the subvolumes from inside of that directory.
         ${lib.optionalString (config.subvolumes != { }) ''
-          printf "\033[32mDEBUG:\033[0m create bcachefs_subvolume\n" >&2 2>&1;
-
           if blkid -o export "$(blkid -lU ${config.uuid})" | grep -q 'TYPE=bcachefs' >&2 2>&1; then
             ${lib.concatMapStrings (subvolume: ''
               (
@@ -202,37 +196,19 @@
                   "$MNTPOINT";
                 trap 'umount "$MNTPOINT"; rm -rf "$MNTPOINT"; rm -rf "$TEMPDIR";' EXIT;
                 SUBVOL_ABS_PATH="$MNTPOINT/${subvolume.name}";
-                printf "\033[32mDEBUG:\033[0m Checking existence of subvolume path: %s\n" "$SUBVOL_ABS_PATH" >&2 2>&1;
                 # Check if it's already a subvolume (using snapshot).
                 if ! bcachefs subvolume snapshot "$SUBVOL_ABS_PATH" "$TEMPDIR/" >&2 2>&1; then
                   # It's not a subvolume, now check if it's a directory.
                   if ! test -d "$SUBVOL_ABS_PATH"; then
                     # It's not a subvolume AND not a directory, so create it.
-                    printf "\033[32mDEBUG:\033[0m Path %s is neither a subvolume nor a directory. Creating...\n" "$SUBVOL_ABS_PATH" >&2 2>&1
                     mkdir -p -- "$(dirname -- "$SUBVOL_ABS_PATH")";
                     bcachefs subvolume create "$SUBVOL_ABS_PATH";
-                  else
-                    printf "\033[32mDEBUG:\033[0m Path %s already exists as a directory. Skipping creation.\n" "$SUBVOL_ABS_PATH" >&2 2>&1
                   fi
                 fi;
               )
             '') (lib.attrValues config.subvolumes)}
           fi;
-
-          printf "\033[32mDEBUG:\033[0m end create bcachefs_subvolume\n">&2 2>&1;
         ''}
-
-        # ls -la "$disko_devices_dir";
-        # find "$disko_devices_dir" -type f -exec sh -c '
-        #   for f do
-        #     if file "$f" | grep -q text; then
-        #       printf "%s\n" "$f" >&2 2>&1;
-        #       cat "$f" >&2 2>&1;
-        #       printf "\n" >&2 2>&1;
-        #     fi
-        #   done
-        # ' sh {} +;
-        printf "\033[32mDEBUG:\033[0m end create bcachefs_filesystem\n" >&2 2>&1;
       '';
     };
     _mount = diskoLib.mkMountOption {
@@ -243,9 +219,6 @@
             subvolume:
             lib.optionalAttrs (subvolume.mountpoint != null) {
               ${subvolume.mountpoint} = ''
-                printf "\033[32mDEBUG:\033[0m mount bcachefs_subvolume\n">&2 2>&1;
-                mount >&2 2>&1;
-
                 if ! findmnt "${rootMountPoint}${subvolume.mountpoint}" >&2 2>&1; then
                   # @todo Figure out why the "X-mount.mkdir" option here doesn't seem to work,
                   # necessitating running `mkdir` here.
@@ -271,9 +244,6 @@
                     UUID="${config.uuid}" \
                     "${rootMountPoint}${subvolume.mountpoint}";
                 fi;
-
-                mount >&2 2>&1;
-                printf "\033[32mDEBUG:\033[0m end mount bcachefs_subvolume\n" >&2 2>&1;
               '';
             }
           ) (lib.attrValues config.subvolumes);
@@ -283,12 +253,6 @@
             subvolumeMounts
             // lib.optionalAttrs (config.mountpoint != null) {
               ${config.mountpoint} = ''
-                printf "\033[32mDEBUG:\033[0m mount bcachefs_filesystem\n">&2 2>&1;
-                # lsblk -f >&2 2>&1;
-                # lsblk >&2 2>&1;
-                # uname -a >&2 2>&1;
-                # bcachefs version >&2 2>&1;
-
                 if ! findmnt "${rootMountPoint}${config.mountpoint}" >&2 2>&1; then
                   # @todo Figure out why the "X-mount.mkdir" option here doesn't seem to work,
                   # necessitating running `mkdir` here.
@@ -306,11 +270,6 @@
                     UUID="${config.uuid}" \
                     "${rootMountPoint}${config.mountpoint}";
                 fi;
-
-                # lsblk -f >&2 2>&1;
-                # lsblk >&2 2>&1;
-                # mount >&2 2>&1;
-                printf "\033[32mDEBUG:\033[0m end mount bcachefs_filesystem\n" >&2 2>&1;
               '';
             };
         };
@@ -384,8 +343,6 @@
       type = lib.types.functionTo (lib.types.listOf lib.types.package);
       default = pkgs: [
         pkgs.bcachefs-tools
-        # # For debugging
-        # pkgs.file
         pkgs.util-linux
       ];
       description = "Packages";
