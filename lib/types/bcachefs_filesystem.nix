@@ -194,7 +194,8 @@
                 ${lib.optionalString (
                   config.passwordFile != null
                 ) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" < "${config.passwordFile}";''}
-                bcachefs mount \
+                mount \
+                  -t bcachefs \
                   -o "${lib.concatStringsSep "," (lib.unique ([ "X-mount.mkdir" ] ++ config.mountOptions))}" \
                   UUID="${config.uuid}" \
                   "$MNTPOINT";
@@ -230,7 +231,8 @@
                   ${lib.optionalString (
                     config.passwordFile != null
                   ) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" < "${config.passwordFile}";''}
-                  bcachefs mount \
+                  mount \
+                    -t bcachefs \
                     -o "${
                       lib.concatStringsSep "," (
                         lib.unique (
@@ -261,7 +263,8 @@
                   ${lib.optionalString (
                     config.passwordFile != null
                   ) ''bcachefs unlock -k session "/dev/disk/by-uuid/${config.uuid}" < "${config.passwordFile}";''}
-                  bcachefs mount \
+                  mount \
+                    -t bcachefs \
                     -o "${lib.concatStringsSep "," (lib.unique ([ "X-mount.mkdir" ] ++ config.mountOptions))}" \
                     UUID="${config.uuid}" \
                     "${rootMountPoint}${config.mountpoint}";
